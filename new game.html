@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Rift Walker's Odyssey | 10-Checkpoint Brainy Puzzle Adventure</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Tone.js for Sound Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        :root {
+            --font-display: 'Cinzel', serif;
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+        body {
+            font-family: var(--font-sans);
+            /* Hardcoded background.jpg with dark atmospheric overlay and fallback */
+            background-color: #090614;
+            background-image:
+                linear-gradient(to bottom, rgba(10, 6, 24, 0.68), rgba(7, 4, 18, 0.86)),
+                url('background.jpg'),
+                url('characters/background.jpg'),
+                radial-gradient(circle at 50% 0%, #1e1b4b 0%, #090d16 60%, #030712 100%);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .font-display { font-family: var(--font-display); }
+        .font-mono-code { font-family: var(--font-mono); }
+
+        /* Dynamic Character Image Container: preserves natural aspect ratio up to 1000x1300px */
+        .char-dynamic-frame {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: auto;
+            height: auto;
+            max-width: min(100%, 1000px);
+            max-height: 1300px;
+            border-radius: 1rem;
+            overflow: hidden;
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px solid rgba(244, 63, 94, 0.55);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+        }
+        .char-dynamic-frame-hero {
+            border-color: rgba(34, 211, 238, 0.65);
+        }
+        .char-dynamic-img {
+            display: block;
+            width: auto;
+            height: auto;
+            max-width: min(100%, 1000px);
+            max-height: min(46vh, 1300px);
+            object-fit: contain;
+        }
+        .char-full-view {
+            width: auto;
+            height: auto;
+            max-width: min(92vw, 1000px);
+            max-height: min(88vh, 1300px);
+            object-fit: contain;
+        }
+
+        /* Custom Animations */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.5), 0 0 35px rgba(168, 85, 247, 0.3); }
+            50% { box-shadow: 0 0 28px rgba(99, 102, 241, 0.9), 0 0 60px rgba(236, 72, 153, 0.6); }
+        }
+        @keyframes riftSpin {
+            0% { transform: scale(1) rotate(0deg); filter: hue-rotate(0deg); }
+            50% { transform: scale(1.35) rotate(180deg); filter: hue-rotate(140deg); }
+            100% { transform: scale(0.05) rotate(360deg); opacity: 0; }
+        }
+        .animate-float { animation: floatSlow 4s ease-in-out infinite; }
+        .animate-glow { animation: pulseGlow 3s ease-in-out infinite; }
+        .rift-vortex { animation: riftSpin 1.2s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards; }
+
+        /* Glassmorphism Cards */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.80);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+        }
+        .glass-card-active {
+            background: linear-gradient(135deg, rgba(49, 46, 129, 0.72) 0%, rgba(15, 23, 42, 0.90) 100%);
+            border: 2px solid #818cf8;
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .option-btn {
+            transition: all 0.18s ease;
+        }
+        .option-btn:hover {
+            transform: translateY(-2px);
+            border-color: rgba(168, 85, 247, 0.75);
+            background: rgba(139, 92, 246, 0.18);
+        }
+        .option-btn.selected {
+            border-color: #fbbf24;
+            background: rgba(245, 158, 11, 0.22);
+            box-shadow: 0 0 18px rgba(251, 191, 36, 0.3);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #090d16; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+    </style>
+</head>
+<body class="antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Ambient Background Glow Accents -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div class="absolute -top-28 -left-28 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/3 -right-28 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-28 left-1/3 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- TOP STICKY HUD (Hidden on Setup Screen, Shown in Game) -->
+    <header id="game-hud" class="hidden sticky top-0 z-40 glass-panel border-b border-indigo-500/30 px-3 py-2.5 sm:px-6 transition-all duration-300">
+        <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+            
+            <!-- Left: Player Avatar & Name -->
+            <div class="flex items-center gap-2.5">
+                <div id="hud-avatar-box" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-indigo-950 border-2 border-amber-400 overflow-hidden shadow-md flex items-center justify-center shrink-0"></div>
+                <div>
+                    <div class="flex items-center gap-1.5">
+                        <span id="hud-player-name" class="font-bold text-sm sm:text-base text-white tracking-wide">Explorer</span>
+                        <span id="hud-world-badge" class="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 font-semibold">Real World</span>
+                    </div>
+                    <p id="hud-checkpoint-text" class="text-xs text-indigo-300 font-medium">Act I: Backyard Discovery</p>
+                </div>
+            </div>
+
+            <!-- Center: Mystery World Stopwatch Timer -->
+            <div id="hud-timer-box" class="flex items-center gap-2 bg-slate-950/90 border border-indigo-500/40 px-3.5 py-1.5 rounded-xl shadow-inner">
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-500" id="timer-status-dot"></span>
+                <div class="text-left">
+                    <div class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold leading-none">Mystery World Time</div>
+                    <div id="hud-timer-display" class="font-mono-code text-base sm:text-lg font-bold text-amber-400 tracking-wider leading-tight">00:00</div>
+                </div>
+            </div>
+
+            <!-- Right: Lifelines, Vitals Battery, Map & Sound Toggle -->
+            <div class="flex items-center gap-2">
+                <!-- Lifeline Counter Pill (3 Lifelines) -->
+                <div id="hud-lifeline-pill" class="hidden sm:flex items-center gap-1.5 bg-indigo-950/80 border border-cyan-500/40 px-3 py-1.5 rounded-xl" title="3 Hero Lifeline Calls for the entire 10-checkpoint journey">
+                    <svg class="w-4 h-4 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <span class="text-xs text-cyan-200 font-semibold">Lifelines:</span>
+                    <span id="hud-lifeline-count" class="font-mono-code text-sm font-bold text-cyan-300">3/3</span>
+                </div>
+
+                <!-- Vitals Battery Meter (Placed strictly between Lifelines and Map) -->
+                <div id="hud-vitals-pill" class="hidden items-center gap-2 bg-slate-950/90 border border-emerald-500/40 px-3 py-1.5 rounded-xl transition-all duration-300" title="Explorer Vitals Battery">
+                    <span class="text-xs font-semibold text-slate-200">Vitals:</span>
+                    <div class="flex items-center">
+                        <!-- Battery Body -->
+                        <div id="vitals-battery-shell" class="w-10 h-5 rounded-[5px] border-2 border-emerald-400 p-0.5 bg-slate-900 flex items-center overflow-hidden transition-colors duration-300">
+                            <div id="vitals-battery-fill" class="h-full rounded-[2px] bg-emerald-400 shadow-[0_0_8px_#34d399] transition-all duration-500" style="width: 100%;"></div>
+                        </div>
+                        <!-- Battery Positive Terminal Cap -->
+                        <div id="vitals-battery-cap" class="w-1 h-2.5 bg-emerald-400 rounded-r-sm ml-[1px] transition-colors duration-300"></div>
+                    </div>
+                </div>
+
+                <!-- Map Button -->
+                <button id="hud-map-btn" onclick="toggleMapModal()" class="hidden px-3 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-400/40 text-xs sm:text-sm font-semibold text-indigo-200 flex items-center gap-1.5 transition">
+                    <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                    </svg>
+                    <span>Map</span>
+                </button>
+
+                <!-- Sound Toggle -->
+                <button id="sound-toggle-btn" onclick="toggleAudio()" class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-600 text-slate-300 transition" title="Toggle Sound Effects">
+                    <svg id="sound-on-icon" class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="relative z-10 max-w-6xl mx-auto px-4 py-6 sm:py-10">
+
+        <!-- ==========================================
+             SCREEN 1: CHARACTER SETUP (AVATAR + NAME)
+             ========================================== -->
+        <section id="screen-setup" class="max-w-2xl mx-auto">
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 shadow-2xl border border-indigo-500/30 text-center">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold uppercase tracking-widest mb-4">
+                    <span>10 Checkpoints • 3 Hero Lifelines • Vitals Survival</span>
+                </div>
+                <h1 class="font-display text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-indigo-200 to-purple-300 tracking-tight mb-3">
+                    THE RIFT WALKER'S ODYSSEY
+                </h1>
+                <p class="text-slate-300 text-sm sm:text-base max-w-xl mx-auto mb-8">
+                    A mysterious object awaits in your backyard. Choose your avatar and enter your name to begin your journey home through the Mystery World.
+                </p>
+
+                <!-- Step 1: Select Gender / Avatar (Hardcoded male.png / female.png) -->
+                <div class="mb-7 text-left">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-indigo-300 mb-3 text-center">
+                        1. Choose Your Main Character Avatar
+                    </label>
+                    <div class="grid grid-cols-2 gap-4 sm:gap-6">
+                        <!-- Male Avatar Option -->
+                        <button type="button" id="avatar-btn-male" onclick="selectGender('male')" class="glass-card-active group rounded-2xl p-4 sm:p-5 flex flex-col items-center text-center transition-all duration-200 cursor-pointer">
+                            <div id="setup-male-avatar" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-indigo-950/90 border-2 border-amber-400 overflow-hidden mb-3 shadow-lg group-hover:scale-105 transition flex items-center justify-center"></div>
+                            <span class="font-bold text-base sm:text-lg text-white">Male Explorer</span>
+                            <span class="text-xs text-indigo-300 mt-0.5">He / Him • Rift Navigator</span>
+                            <span id="badge-male" class="mt-2.5 px-3 py-0.5 text-[11px] font-bold rounded-full bg-amber-400 text-slate-950">SELECTED</span>
+                        </button>
+
+                        <!-- Female Avatar Option -->
+                        <button type="button" id="avatar-btn-female" onclick="selectGender('female')" class="glass-panel hover:border-indigo-400/60 group rounded-2xl p-4 sm:p-5 flex flex-col items-center text-center transition-all duration-200 cursor-pointer">
+                            <div id="setup-female-avatar" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-indigo-950/90 border-2 border-indigo-400/40 overflow-hidden mb-3 shadow-lg group-hover:scale-105 transition flex items-center justify-center"></div>
+                            <span class="font-bold text-base sm:text-lg text-white">Female Explorer</span>
+                            <span class="text-xs text-indigo-300 mt-0.5">She / Her • Rift Navigator</span>
+                            <span id="badge-female" class="mt-2.5 px-3 py-0.5 text-[11px] font-bold rounded-full bg-slate-800 text-slate-400">CHOOSE</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Enter Player Name -->
+                <div class="mb-7 text-left max-w-md mx-auto">
+                    <label for="player-name-input" class="block text-xs font-bold uppercase tracking-wider text-indigo-300 mb-2 text-center">
+                        2. Enter Your Name (Characters Will Call You By This Name)
+                    </label>
+                    <input type="text" id="player-name-input" maxlength="22" placeholder="e.g., Alex, Priya, Arjun..." 
+                        class="w-full px-4 py-3.5 rounded-xl bg-slate-900/90 border-2 border-indigo-500/50 focus:border-amber-400 focus:outline-none text-white text-center text-lg font-semibold placeholder-slate-500 shadow-inner transition"
+                        onkeydown="if(event.key==='Enter') startStoryBackyard()">
+                    <p id="name-error-msg" class="hidden text-rose-400 text-xs font-semibold text-center mt-2">
+                        Please enter your name before starting the adventure!
+                    </p>
+                </div>
+
+                <!-- Start Adventure Button -->
+                <button onclick="startStoryBackyard()" class="w-full sm:w-auto min-w-[260px] px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-pink-600 hover:from-amber-400 hover:to-pink-500 text-slate-950 font-extrabold text-base sm:text-lg tracking-wide shadow-xl hover:shadow-amber-500/25 transform hover:-translate-y-0.5 transition">
+                    Begin Story in Backyard →
+                </button>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SCREEN 2: ACT I - THE BACKYARD DISCOVERY
+             ========================================== -->
+        <section id="screen-backyard" class="hidden max-w-3xl mx-auto">
+            <div id="backyard-card" class="glass-panel rounded-3xl p-6 sm:p-10 border border-amber-500/30 shadow-2xl text-center transition-all duration-700">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-widest mb-3">
+                    Act I • The Real World (Your Backyard)
+                </div>
+                <h2 class="font-display text-2xl sm:text-4xl font-bold text-white mb-4">
+                    A Strange Glow in the Grass...
+                </h2>
+
+                <!-- Visual Scene: Player Avatar + Glowing Relic in Backyard -->
+                <div class="relative my-6 py-8 px-4 rounded-2xl bg-gradient-to-b from-indigo-950/80 via-slate-900 to-emerald-950/60 border border-indigo-500/30 overflow-hidden">
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12 relative z-10">
+                        <!-- Player Character -->
+                        <div class="flex flex-col items-center">
+                            <div id="backyard-avatar-box" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-slate-900 border-2 border-amber-400 overflow-hidden shadow-xl flex items-center justify-center"></div>
+                            <span id="backyard-player-label" class="mt-2 px-3 py-0.5 rounded-full bg-slate-800 text-amber-300 text-xs font-bold">You</span>
+                        </div>
+
+                        <!-- Animated Arrow -->
+                        <div class="text-amber-400 font-bold text-sm flex flex-col items-center">
+                            <span class="uppercase tracking-widest text-[11px] text-indigo-300 mb-1">Discovers</span>
+                            <svg class="w-8 h-8 animate-bounce sm:rotate-[-90deg]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                            </svg>
+                        </div>
+
+                        <!-- The Mysterious Backyard Relic -->
+                        <div class="flex flex-col items-center">
+                            <button onclick="touchMysteriousObject()" class="group relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-indigo-950/90 border-2 border-fuchsia-400 flex items-center justify-center animate-float animate-glow cursor-pointer">
+                                <!-- Glowing Astral Prism SVG -->
+                                <svg class="w-20 h-20 group-hover:scale-110 transition-transform duration-300" viewBox="0 0 100 100">
+                                    <defs>
+                                        <linearGradient id="prismGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#f472b6"/>
+                                            <stop offset="50%" stop-color="#818cf8"/>
+                                            <stop offset="100%" stop-color="#fbbf24"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <polygon points="50,8 90,35 75,88 25,88 10,35" fill="url(#prismGrad)" opacity="0.25" stroke="#f472b6" stroke-width="2"/>
+                                    <polygon points="50,15 82,50 50,85 18,50" fill="url(#prismGrad)" stroke="#ffffff" stroke-width="2.5"/>
+                                    <circle cx="50" cy="50" r="10" fill="#fef08a"/>
+                                    <path d="M50,15 L50,85 M18,50 L82,50" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="3,3"/>
+                                </svg>
+                            </button>
+                            <span class="mt-2 text-xs font-bold text-fuchsia-300 uppercase tracking-wider">The Astral Prism</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="backyard-story-text" class="text-slate-200 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto mb-8"></p>
+
+                <button onclick="touchMysteriousObject()" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-indigo-600 to-amber-500 hover:from-fuchsia-500 hover:to-amber-400 text-white font-extrabold text-base sm:text-lg shadow-xl animate-pulse hover:animate-none transition">
+                    ✨ Touch the Mysterious Object
+                </button>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SCREEN 3: ACT II - MYSTERY WORLD AWAKENING
+             (DISCOVER MAP & 3-LIFELINE DEVICE + START TIMER)
+             ========================================== -->
+        <section id="screen-awakening" class="hidden max-w-3xl mx-auto">
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 border border-cyan-500/40 shadow-2xl">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <span class="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-bold uppercase tracking-widest">
+                        Act II • Trapped in the Mystery World
+                    </span>
+                    <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-mono-code font-bold flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        Stopwatch Started!
+                    </span>
+                </div>
+
+                <h2 class="font-display text-2xl sm:text-4xl font-bold text-white mb-3">
+                    Welcome to the Nexus of Mysteries, <span id="awakening-name" class="text-amber-400"></span>!
+                </h2>
+                <p id="awakening-story-text" class="text-slate-300 text-sm sm:text-base leading-relaxed mb-6"></p>
+
+                <!-- Two Discovered Items Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+                    <!-- Item 1: The 10-Checkpoint Map -->
+                    <div class="rounded-2xl bg-slate-900/90 border border-amber-500/40 p-5 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-2xl shrink-0">
+                                    🗺️
+                                </div>
+                                <div>
+                                    <span class="text-[11px] font-bold uppercase tracking-wider text-amber-400">Discovered Item #1</span>
+                                    <h3 class="font-bold text-lg text-white">The 10-Checkpoint Map</h3>
+                                </div>
+                            </div>
+                            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                                The map reveals that the only portal back to your home in the Real World is locked behind <strong>10 Checkpoints</strong>. Watch your <strong>Vitals Battery</strong> in the top bar—every wrong answer drains your life force!
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-amber-300">
+                            <span>Checkpoints: 01 → 10</span>
+                            <button onclick="toggleMapModal()" class="underline font-bold hover:text-amber-200">Preview Map</button>
+                        </div>
+                    </div>
+
+                    <!-- Item 2: The Heroic Lifeline Device (3 Calls) -->
+                    <div class="rounded-2xl bg-slate-900/90 border border-cyan-500/40 p-5 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center text-2xl shrink-0">
+                                    📟
+                                </div>
+                                <div>
+                                    <span class="text-[11px] font-bold uppercase tracking-wider text-cyan-400">Discovered Item #2</span>
+                                    <h3 class="font-bold text-lg text-white">Hero Lifeline Communicator</h3>
+                                </div>
+                            </div>
+                            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                                This multiverse communicator holds exactly <strong>3 Lifeline Calls</strong> for your entire journey. Whenever you call for help at a checkpoint, that monster's <strong>matching hero</strong> will arrive and give you the hint to solve the puzzle!
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-cyan-300 font-semibold">
+                            <span>Battery Charges: ⚡⚡⚡ (3 / 3)</span>
+                            <span>Use Wisely!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button onclick="enterCheckpoint(0)" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-slate-950 font-extrabold text-base sm:text-lg shadow-xl transition">
+                        Equip Map & Communicator → Enter Checkpoint 1
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SCREEN 4: ACT III - THE 10 CHECKPOINTS
+             ========================================== -->
+        <section id="screen-checkpoint" class="hidden">
+            <!-- Top Progress Bar (Checkpoints 1 to 10) -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between text-xs font-semibold text-slate-300 mb-2 px-1">
+                    <span id="cp-progress-label" class="text-amber-300 font-bold uppercase tracking-wider">Checkpoint 1 of 10</span>
+                    <span>Goal: Reach Portal #10 to Return Home</span>
+                </div>
+                <div id="cp-stepper-dots" class="grid grid-cols-10 gap-1.5 sm:gap-2"></div>
+            </div>
+
+            <!-- Main Checkpoint Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- LEFT COLUMN (5 cols): Villain Card + Lifeline Hero Box -->
+                <div class="lg:col-span-5 space-y-4">
+                    
+                    <!-- Antagonist Monster Card -->
+                    <div class="glass-panel rounded-3xl p-5 border border-rose-500/40 shadow-xl relative overflow-hidden">
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <span id="cp-location-badge" class="inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                Checkpoint 01
+                            </span>
+                            <button onclick="openFullImageModal('villain')" class="text-xs text-rose-300 hover:text-white underline font-medium">
+                                Full View (Max 1000×1300)
+                            </button>
+                        </div>
+
+                        <!-- Dynamic Ratio Villain Portrait -->
+                        <div class="flex flex-col items-center text-center">
+                            <div class="char-dynamic-frame my-1" id="villain-portrait-frame">
+                                <img id="villain-img-el" class="char-dynamic-img" alt="Villain Portrait" />
+                            </div>
+                            <h2 id="villain-name" class="font-display text-2xl font-bold text-white leading-tight mt-3"></h2>
+                            <p id="villain-title" class="text-xs text-rose-300 font-medium mt-0.5"></p>
+                        </div>
+
+                        <!-- Villain Dialogue Bubble -->
+                        <div class="mt-4 p-3.5 rounded-2xl bg-slate-950/90 border border-rose-500/30 text-xs sm:text-sm text-slate-200 italic leading-relaxed relative">
+                            <span class="text-rose-400 font-bold not-italic block text-[11px] uppercase tracking-wider mb-1" id="villain-speaker-label"></span>
+                            <p id="villain-dialogue-text"></p>
+                        </div>
+                    </div>
+
+                    <!-- Hero Lifeline Communicator Panel -->
+                    <div class="glass-panel rounded-3xl p-5 border border-cyan-500/40 shadow-xl">
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg">📟</span>
+                                <div>
+                                    <h3 class="text-xs font-extrabold uppercase tracking-wider text-cyan-300">Hero Lifeline Device</h3>
+                                    <p class="text-[11px] text-slate-400">Summons this monster's rival hero</p>
+                                </div>
+                            </div>
+                            <div id="lifeline-battery-bars" class="flex items-center gap-1"></div>
+                        </div>
+
+                        <!-- Call Lifeline Button -->
+                        <button id="call-lifeline-btn" onclick="useHeroLifeline()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 transition cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                            </svg>
+                            <span id="call-lifeline-btn-text">Summon Hero for Hint</span>
+                        </button>
+
+                        <!-- Hero Arrived Box (Hidden until called on this checkpoint) -->
+                        <div id="hero-hint-card" class="hidden mt-4 pt-4 border-t border-cyan-500/30">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                                    Lifeline Connected!
+                                </span>
+                                <button onclick="openFullImageModal('hero')" class="text-xs text-cyan-300 hover:text-white underline font-medium">
+                                    Full View
+                                </button>
+                            </div>
+
+                            <div class="flex flex-col items-center text-center mb-3">
+                                <div class="char-dynamic-frame char-dynamic-frame-hero my-1" id="hero-portrait-frame">
+                                    <img id="hero-img-el" class="char-dynamic-img" alt="Hero Portrait" />
+                                </div>
+                                <h4 id="hero-name" class="font-display text-xl font-bold text-white mt-2"></h4>
+                                <p class="text-[11px] text-emerald-300 font-semibold">Incoming Protagonist Transmission</p>
+                            </div>
+
+                            <div class="p-3.5 rounded-2xl bg-cyan-950/70 border border-cyan-400/40 text-xs sm:text-sm text-cyan-100 leading-relaxed">
+                                <p id="hero-hint-text"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN (7 cols): Interactive Brainy Puzzle Arena -->
+                <div class="lg:col-span-7">
+                    <div class="glass-panel rounded-3xl p-5 sm:p-7 border border-indigo-500/40 shadow-2xl">
+                        <div class="flex flex-wrap items-center justify-between gap-2 pb-4 mb-5 border-b border-slate-800">
+                            <div>
+                                <span class="text-xs font-bold uppercase tracking-wider text-amber-400" id="puzzle-subtitle"></span>
+                                <h3 id="puzzle-title" class="font-display text-xl sm:text-2xl font-bold text-white"></h3>
+                            </div>
+                            <span id="cp-solved-badge" class="hidden px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs font-bold">
+                                ✓ Gate Unlocked
+                            </span>
+                        </div>
+
+                        <!-- Clean Question Area (No giveaway hints) -->
+                        <div id="puzzle-instructions" class="text-slate-200 text-sm sm:text-base leading-relaxed mb-6 space-y-3"></div>
+
+                        <!-- Shuffled Options Container -->
+                        <div id="puzzle-workspace" class="my-5 p-4 sm:p-5 rounded-2xl bg-slate-950/85 border border-indigo-500/30 space-y-3"></div>
+
+                        <!-- Feedback Message Box -->
+                        <div id="puzzle-feedback-box" class="hidden my-4 p-4 rounded-2xl text-sm font-semibold flex items-center justify-between gap-3">
+                            <span id="puzzle-feedback-text"></span>
+                        </div>
+
+                        <!-- Action Controls -->
+                        <div class="mt-6 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                            <button onclick="resetAndReshufflePuzzle()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-semibold transition">
+                                ↻ Reset Lock & Reshuffle Options
+                            </button>
+
+                            <button id="submit-answer-btn" onclick="submitSelectedAnswer()" class="px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-500 hover:from-indigo-500 hover:to-amber-400 text-white font-extrabold text-sm sm:text-base shadow-xl transition">
+                                Unlock Checkpoint →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SCREEN 4B: GAME OVER (VITALS BATTERY DEAD)
+             ========================================== -->
+        <section id="screen-gameover" class="hidden max-w-2xl mx-auto">
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 border-2 border-rose-500/70 shadow-2xl text-center">
+                <div class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-rose-500/20 border border-rose-400/40 text-rose-300 text-xs font-bold uppercase tracking-widest mb-4">
+                    Vitals Battery Depleted • Game Over
+                </div>
+
+                <!-- Dead Battery Graphic -->
+                <div class="flex justify-center my-4">
+                    <div class="flex items-center">
+                        <div class="w-24 h-12 rounded-xl border-4 border-rose-500 p-1 bg-slate-950 flex items-center justify-center relative">
+                            <span class="text-rose-500 font-mono-code font-extrabold text-xs tracking-widest animate-pulse">EMPTY</span>
+                        </div>
+                        <div class="w-2 h-6 bg-rose-500 rounded-r-md ml-0.5"></div>
+                    </div>
+                </div>
+
+                <h1 class="font-display text-3xl sm:text-5xl font-extrabold text-rose-400 mb-3">
+                    VITALS DEPLETED!
+                </h1>
+                <p id="gameover-story-text" class="text-slate-300 text-sm sm:text-base max-w-xl mx-auto mb-8 leading-relaxed"></p>
+
+                <button onclick="resetGame()" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-rose-600 via-orange-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-extrabold text-base sm:text-lg shadow-xl transition transform hover:-translate-y-0.5">
+                    ↻ Restart Game From Beginning
+                </button>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SCREEN 5: ACT IV - VICTORY & RETURN HOME
+             (STOPWATCH STOPPED + FINAL COMPLETION TIME + SHEET LOG)
+             ========================================== -->
+        <section id="screen-victory" class="hidden max-w-3xl mx-auto">
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 border-2 border-amber-400/60 shadow-2xl text-center">
+                <div class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold uppercase tracking-widest mb-4">
+                    Act IV • Portal Crossed • Back in Your Backyard!
+                </div>
+
+                <!-- Winner Avatar -->
+                <div class="flex justify-center mb-4">
+                    <div id="victory-avatar-box" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-indigo-950 border-4 border-amber-400 overflow-hidden shadow-2xl flex items-center justify-center"></div>
+                </div>
+
+                <h1 class="font-display text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-emerald-300 to-cyan-300 mb-2">
+                    WELCOME HOME, <span id="victory-player-name"></span>!
+                </h1>
+                <p id="victory-story-summary" class="text-slate-300 text-sm sm:text-base max-w-xl mx-auto mb-6"></p>
+
+                <!-- Prominent Completion Time Banner -->
+                <div class="my-6 p-6 rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-900 to-amber-950/40 border-2 border-amber-400/70 shadow-xl">
+                    <div class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">
+                        ⏱️ Official Mystery World Escape Time
+                    </div>
+                    <p id="victory-time-sentence" class="text-xl sm:text-2xl font-extrabold text-white my-2">
+                        You have completed the game in 0 mins and 0 seconds!
+                    </p>
+                    <div class="inline-block font-mono-code text-3xl sm:text-4xl font-black text-amber-400 bg-slate-950/90 px-6 py-2 rounded-xl border border-amber-500/30 mt-1" id="victory-digital-clock">
+                        00:00
+                    </div>
+                    <p id="sheet-sync-status" class="text-xs text-emerald-300 font-medium mt-3"></p>
+                </div>
+
+                <!-- Stats Breakdown -->
+                <div class="grid grid-cols-3 gap-3 sm:gap-4 mb-8">
+                    <div class="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-700">
+                        <span class="block text-[11px] uppercase tracking-wider text-slate-400">Checkpoints Cleared</span>
+                        <span class="font-mono-code text-xl sm:text-2xl font-extrabold text-emerald-400">10 / 10</span>
+                    </div>
+                    <div class="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-700">
+                        <span class="block text-[11px] uppercase tracking-wider text-slate-400">Lifelines Remaining</span>
+                        <span id="victory-lifelines-left" class="font-mono-code text-xl sm:text-2xl font-extrabold text-cyan-400">3 / 3</span>
+                    </div>
+                    <div class="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-700">
+                        <span class="block text-[11px] uppercase tracking-wider text-slate-400">Rift Walker Rank</span>
+                        <span id="victory-rank-badge" class="font-display text-base sm:text-xl font-bold text-amber-300">Grandmaster</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap items-center justify-center gap-4">
+                    <button onclick="copyScorecard()" class="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm flex items-center gap-2 shadow-lg transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                        </svg>
+                        <span id="copy-score-btn-text">Copy Completion Certificate</span>
+                    </button>
+                    <button onclick="resetGame()" class="px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-bold text-sm transition">
+                        Play Again with New Player
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==========================================
+         MODAL 1: THE 10-CHECKPOINT RIFT MAP
+         ========================================== -->
+    <div id="map-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl max-w-3xl w-full p-6 sm:p-8 border border-amber-400/40 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-800">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">🗺️</span>
+                    <div>
+                        <h3 class="font-display text-xl font-bold text-white">The Wayfinder's 10-Checkpoint Map</h3>
+                        <p class="text-xs text-slate-400">Clear all 10 Monster Checkpoints to reach the Real World Portal</p>
+                    </div>
+                </div>
+                <button onclick="toggleMapModal()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300">✕</button>
+            </div>
+
+            <div id="map-modal-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+
+            <div class="mt-6 text-right">
+                <button onclick="toggleMapModal()" class="px-6 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-sm">Close Map</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODAL 2: FULL-SIZE CHARACTER VIEWER (UP TO 1000x1300)
+         ========================================== -->
+    <div id="full-image-modal" onclick="closeFullImageModal()" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out">
+        <div class="relative flex flex-col items-center">
+            <img id="full-modal-img" class="char-full-view rounded-2xl border-2 border-indigo-400/60 shadow-2xl" alt="Full Character View" />
+            <p id="full-modal-caption" class="text-sm font-bold text-white mt-3 bg-slate-900/90 px-4 py-1.5 rounded-full border border-slate-700"></p>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         GAME SCRIPT
+         ========================================== -->
+    <script>
+        /* -----------------------------------------------------------
+           0. GOOGLE SHEETS WEBHOOK CONFIGURATION (FOR VERCEL HOSTING)
+           Paste your Google Apps Script Web App URL inside the quotes below!
+           ----------------------------------------------------------- */
+        const GOOGLE_SHEETS_WEBHOOK_URL = "PASTE_YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE";
+
+        /* -----------------------------------------------------------
+           1. FISHER-YATES SHUFFLE FOR RANDOMIZED OPTIONS
+           ----------------------------------------------------------- */
+        function shuffleArray(arr) {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        /* -----------------------------------------------------------
+           2. SOUND SYNTHESIS (Tone.js)
+           ----------------------------------------------------------- */
+        let soundEnabled = true;
+        let synth = null;
+
+        function initAudio() {
+            if (!synth && window.Tone) {
+                synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                synth.volume.value = -8;
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || !window.Tone) return;
+            try {
+                initAudio();
+                if (Tone.context.state !== 'running') Tone.context.resume();
+                const now = Tone.now();
+                if (type === 'click') {
+                    synth.triggerAttackRelease(['C5'], '32n', now);
+                } else if (type === 'rift') {
+                    synth.triggerAttackRelease(['C3', 'G3', 'Eb4', 'B4'], '4n', now);
+                    synth.triggerAttackRelease(['D3', 'A3', 'F#4', 'C5'], '2n', now + 0.25);
+                } else if (type === 'lifeline') {
+                    synth.triggerAttackRelease(['E5'], '16n', now);
+                    synth.triggerAttackRelease(['A5'], '16n', now + 0.12);
+                    synth.triggerAttackRelease(['C#6'], '8n', now + 0.24);
+                } else if (type === 'success') {
+                    synth.triggerAttackRelease(['C5', 'E5'], '16n', now);
+                    synth.triggerAttackRelease(['G5', 'C6'], '8n', now + 0.15);
+                } else if (type === 'error') {
+                    synth.triggerAttackRelease(['Eb3', 'A2'], '8n', now);
+                } else if (type === 'gameover') {
+                    synth.triggerAttackRelease(['G3', 'Eb3'], '4n', now);
+                    synth.triggerAttackRelease(['D3', 'B2'], '4n', now + 0.25);
+                    synth.triggerAttackRelease(['C2', 'G2'], '2n', now + 0.5);
+                } else if (type === 'victory') {
+                    synth.triggerAttackRelease(['C4', 'E4', 'G4'], '8n', now);
+                    synth.triggerAttackRelease(['F4', 'A4', 'C5'], '8n', now + 0.2);
+                    synth.triggerAttackRelease(['G4', 'B4', 'D5'], '8n', now + 0.4);
+                    synth.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '2n', now + 0.6);
+                }
+            } catch (e) {}
+        }
+
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('sound-toggle-btn');
+            btn.innerHTML = soundEnabled
+                ? `<svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>`
+                : `<svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>`;
+        }
+
+        /* -----------------------------------------------------------
+           3. HARDCODED PLAYER AVATAR (male.png / male.jpg & female.png / female.jpg)
+           ----------------------------------------------------------- */
+        function getFallbackAvatarDataUri(gender) {
+            const bg = gender === 'female' ? '#be185d' : '#1d4ed8';
+            const label = gender === 'female' ? 'F' : 'M';
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="48" fill="${bg}"/>
+                <text x="50" y="64" text-anchor="middle" fill="#fff" font-family="Cinzel, serif" font-size="42" font-weight="bold">${label}</text>
+            </svg>`;
+            return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+        }
+
+        function renderPlayerAvatar(containerId, gender) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const candidatePaths = gender === 'female'
+                ? ['female.png', 'female.jpg', 'characters/female.png', 'characters/female.jpg']
+                : ['male.png', 'male.jpg', 'characters/male.png', 'characters/male.jpg'];
+
+            container.innerHTML = '';
+            const img = document.createElement('img');
+            img.className = 'w-full h-full object-cover';
+            img.alt = gender === 'female' ? 'Female Explorer' : 'Male Explorer';
+
+            let attempt = 0;
+            img.onerror = function () {
+                attempt++;
+                if (attempt < candidatePaths.length) {
+                    img.src = candidatePaths[attempt];
+                } else {
+                    img.onerror = null;
+                    img.src = getFallbackAvatarDataUri(gender);
+                }
+            };
+            img.src = candidatePaths[0];
+            container.appendChild(img);
+        }
+
+        /* -----------------------------------------------------------
+           4. HARDCODED CHARACTER IMAGE LOADER (Same Folder OR characters/ Folder)
+           ----------------------------------------------------------- */
+        function createCharacterFallbackSvgDataUri(name, role, primaryColor) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="500" height="650" viewBox="0 0 500 650">
+                <defs>
+                    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="${primaryColor}"/>
+                        <stop offset="100%" stop-color="#090d16"/>
+                    </linearGradient>
+                </defs>
+                <rect width="500" height="650" rx="28" fill="url(#g)" stroke="#ffffff33" stroke-width="4"/>
+                <circle cx="250" cy="240" r="110" fill="#ffffff12" stroke="#ffffff44" stroke-width="3"/>
+                <text x="250" y="258" text-anchor="middle" fill="#ffffff" font-family="Cinzel, serif" font-size="68" font-weight="bold">${name.slice(0, 2).toUpperCase()}</text>
+                <text x="250" y="440" text-anchor="middle" fill="#ffffff" font-family="Cinzel, serif" font-size="30" font-weight="bold">${name}</text>
+                <text x="250" y="485" text-anchor="middle" fill="#cbd5e1" font-family="Inter, sans-serif" font-size="18" letter-spacing="3">${role.toUpperCase()}</text>
+            </svg>`;
+            return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+        }
+
+        function loadHardcodedCharacterImage(imgEl, baseFileName, charName, role, color) {
+            const baseNoExt = baseFileName.replace(/\.(jpg|jpeg|png)$/i, '');
+            const candidates = [
+                `${baseNoExt}.jpg`,
+                `characters/${baseNoExt}.jpg`,
+                `${baseNoExt}.png`,
+                `characters/${baseNoExt}.png`
+            ];
+            let idx = 0;
+            imgEl.onerror = function () {
+                idx++;
+                if (idx < candidates.length) {
+                    imgEl.src = candidates[idx];
+                } else {
+                    imgEl.onerror = null;
+                    imgEl.src = createCharacterFallbackSvgDataUri(charName, role, color);
+                }
+            };
+            imgEl.src = candidates[0];
+        }
+
+        /* -----------------------------------------------------------
+           5. THE 10 CHECKPOINTS (Hardcoded Filenames + Harder Shuffling Puzzles)
+           ----------------------------------------------------------- */
+        const CHECKPOINTS = [
+            {
+                id: 1,
+                location: "Checkpoint 01 • Deep Crimson Woods",
+                villain: {
+                    name: "The Witch",
+                    title: "Sorceress of the Dark Forest",
+                    file: "witch.jpg",
+                    color: "#581c87",
+                    icon: "🧙‍♀️",
+                    dialogue: (name) => `"Hee-hee! Welcome to my woods, ${name}! Four sealed apothecary vials sit on my oak table, and three are lethal poison!"`
+                },
+                hero: {
+                    name: "Red Riding Hood",
+                    file: "red riding hood.jpg",
+                    color: "#991b1b",
+                    icon: "🧺",
+                    hint: (name) => `"${name}, write the four names in reverse alphabetical order: **Viridian, Crimson, Cobalt, Amber**. The 7-letter vial immediately to the left of Cobalt is **Crimson**!"`
+                },
+                puzzleSubtitle: "Checkpoint 1 • Alchemical Deduction",
+                puzzleTitle: "The Apothecary's Deduction",
+                prompt: `Four sealed vials sit on the Witch's oak table: <strong>Amber</strong>, <strong>Cobalt</strong>, <strong>Crimson</strong>, and <strong>Viridian</strong>.<br><br>
+                Read the three alchemical truths carefully:<br>
+                1. When the four vials are arranged in <strong>reverse alphabetical order</strong>, the safe antidote is immediately to the left of <strong>Cobalt</strong>.<br>
+                2. Neither <strong>Amber</strong> nor <strong>Cobalt</strong> is the antidote.<br>
+                3. The antidote's name contains <strong>exactly 7 letters</strong>.<br><br>
+                Which vial contains the only safe antidote?`,
+                options: ["Crimson", "Viridian", "Amber", "Cobalt"],
+                answer: "Crimson"
+            },
+            {
+                id: 2,
+                location: "Checkpoint 02 • The Upside-Down Rift",
+                villain: {
+                    name: "Demogorgon",
+                    title: "Predator of the Shadow Dimension",
+                    file: "demogorgon.jpg",
+                    color: "#450a0a",
+                    icon: "👹",
+                    dialogue: (name) => `"*SCREEEECH!* The dimensional rift frequency shifts by a strict mathematical progression, ${name}!"`
+                },
+                hero: {
+                    name: "Eleven",
+                    file: "eleven.jpg",
+                    color: "#1e3a8a",
+                    icon: "🧇",
+                    hint: (name) => `"${name}, look at the differences between consecutive numbers: +5, +7, +9, +11... Add **+13** to 35 to get **48**!"`
+                },
+                puzzleSubtitle: "Checkpoint 2 • Harmonic Sequence",
+                puzzleTitle: "Hawkins Lab Frequency Lock",
+                prompt: `To seal the Upside-Down rift, you must tune the psionic transmitter to the 6th harmonic value in this sequence:<br><br>
+                <div class="font-mono-code text-lg sm:text-xl text-cyan-300 bg-slate-900/90 p-3.5 rounded-xl border border-slate-700 text-center tracking-wider">
+                    3 &nbsp;,&nbsp; 8 &nbsp;,&nbsp; 15 &nbsp;,&nbsp; 24 &nbsp;,&nbsp; 35 &nbsp;,&nbsp; ?
+                </div>`,
+                options: ["48", "46", "50", "44"],
+                answer: "48"
+            },
+            {
+                id: 3,
+                location: "Checkpoint 03 • Gotham Carnival Vault",
+                villain: {
+                    name: "The Joker",
+                    title: "Clown Prince of Crime",
+                    file: "joker.jpg",
+                    color: "#14532d",
+                    icon: "🃏",
+                    dialogue: (name) => `"Hahaha! Three steel caskets, ${name}, and every single inscription I carved is a complete LIE!"`
+                },
+                hero: {
+                    name: "Batman",
+                    file: "batman.jpg",
+                    color: "#1e293b",
+                    icon: "🦇",
+                    hint: (name) => `"${name}, since every label is false, examine Casket B's statement: 'The exit key is NOT in Casket B.' Because that statement is a lie, the key MUST be in **Casket B**!"`
+                },
+                puzzleSubtitle: "Checkpoint 3 • Paradox Deduction",
+                puzzleTitle: "The Liar's Three Caskets",
+                prompt: `The Joker places three steel caskets before you—<strong>Casket A</strong>, <strong>Casket B</strong>, and <strong>Casket C</strong>. Only one contains the exit key; the other two hold laughing gas.<br><br>
+                <strong>Every single inscription below is FALSE:</strong><br>
+                • <strong>Casket A reads:</strong> "The exit key is in Casket A."<br>
+                • <strong>Casket B reads:</strong> "The exit key is NOT in Casket B."<br>
+                • <strong>Casket C reads:</strong> "The exit key is in Casket A."<br><br>
+                Which casket holds the exit key?`,
+                options: ["Casket B", "Casket A", "Casket C", "None of the caskets"],
+                answer: "Casket B"
+            },
+            {
+                id: 4,
+                location: "Checkpoint 04 • Cybertron Core Bridge",
+                villain: {
+                    name: "Decepticons",
+                    title: "Cybertronian War Armada",
+                    file: "decepticon.jpg",
+                    color: "#312e81",
+                    icon: "🤖",
+                    dialogue: (name) => `"Foolish human ${name}! Our Cybertronian binary relays will overload your logic circuits!"`
+                },
+                hero: {
+                    name: "Optimus Prime",
+                    file: "optimus prime.jpg",
+                    color: "#1d4ed8",
+                    icon: "🚛",
+                    hint: (name) => `"${name}, since each relay can only be 0 or 1, look at 'Q + R = 2'. Both Q and R must be 1! That forces P = 0 and S = 0: **P=0, Q=1, R=1, S=0**."`
+                },
+                puzzleSubtitle: "Checkpoint 4 • Binary System Equations",
+                puzzleTitle: "AllSpark Logic Matrix",
+                prompt: `Four Cybertronian power relays (<strong>P, Q, R, S</strong>) must each be set to either <strong>1 (ON)</strong> or <strong>0 (OFF)</strong> so that all four security equations hold true simultaneously:<br><br>
+                <div class="font-mono-code text-sm sm:text-base bg-slate-900/90 p-4 rounded-xl border border-slate-700 space-y-1 text-indigo-200">
+                    <div>• P + Q + R + S = 2</div>
+                    <div>• P + Q = 1</div>
+                    <div>• Q + R = 2</div>
+                    <div>• R + S = 1</div>
+                </div>
+                What is the exact 4-bit state <strong>(P, Q, R, S)</strong>?`,
+                options: [
+                    "P=0, Q=1, R=1, S=0",
+                    "P=1, Q=0, R=1, S=0",
+                    "P=0, Q=1, R=0, S=1",
+                    "P=1, Q=1, R=0, S=0"
+                ],
+                answer: "P=0, Q=1, R=1, S=0"
+            },
+            {
+                id: 5,
+                location: "Checkpoint 05 • Oscorp Suspension Tower",
+                villain: {
+                    name: "Green Goblin",
+                    title: "Norman Osborn on Glider",
+                    file: "green goblin.jpg",
+                    color: "#065f46",
+                    icon: "🎃",
+                    dialogue: (name) => `"Let's see how fast your brain swings, ${name}! Cut the wrong tension cable and my Pumpkin Bomb goes BOOM!"`
+                },
+                hero: {
+                    name: "Spider-Man",
+                    file: "spiderman.jpg",
+                    color: "#b91c1c",
+                    icon: "🕷️",
+                    hint: (name) => `"${name}, order the cables from lowest tension to highest tension: **Beta < Gamma < Alpha < Delta < Epsilon**. The exact middle (3rd) cable is **Alpha**!"`
+                },
+                puzzleSubtitle: "Checkpoint 5 • Relative Ordering",
+                puzzleTitle: "Oscorp Cable Tension Riddle",
+                prompt: `Five structural web-cables (<strong>Alpha, Beta, Gamma, Delta, Epsilon</strong>) are under different tensions:<br><br>
+                • <strong>Alpha</strong> holds more tension than <strong>Gamma</strong>, but less than <strong>Delta</strong>.<br>
+                • <strong>Beta</strong> holds less tension than <strong>Gamma</strong>.<br>
+                • <strong>Epsilon</strong> holds more tension than <strong>Delta</strong>.<br><br>
+                To disarm the pumpkin bomb, you must sever the cable with the <strong>exact median (middle) tension</strong>. Which cable do you cut?`,
+                options: ["Alpha", "Gamma", "Delta", "Beta", "Epsilon"],
+                answer: "Alpha"
+            },
+            {
+                id: 6,
+                location: "Checkpoint 06 • Chamber of Dark Relics",
+                villain: {
+                    name: "Lord Voldemort",
+                    title: "He-Who-Must-Not-Be-Named",
+                    file: "lord voldermodt.jpg",
+                    color: "#064e3b",
+                    icon: "🐍",
+                    dialogue: (name) => `"You dare challenge the Dark Lord, ${name}? Strike the wrong pedestal and my curse rebounds!"`
+                },
+                hero: {
+                    name: "Harry Potter",
+                    file: "harry potter.jpg",
+                    color: "#7c2d12",
+                    icon: "⚡",
+                    hint: (name) => `"${name}, since the Ring is at Position 3 and the Locket is immediately to its right, the Locket is at Position 4. That leaves Position 2 for the Cup, which is adjacent to **Diary** at Position 1!"`
+                },
+                puzzleSubtitle: "Checkpoint 6 • Positional Deduction",
+                puzzleTitle: "The Five Cursed Pedestals",
+                prompt: `Five enchanted artifacts rest on stone pedestals in a row from <strong>Position 1 (Left)</strong> to <strong>Position 5 (Right)</strong>: <strong>Diary</strong>, <strong>Ring</strong>, <strong>Locket</strong>, <strong>Cup</strong>, and <strong>Diadem</strong>.<br><br>
+                • The <strong>Locket</strong> is immediately to the right of the <strong>Ring</strong>.<br>
+                • The <strong>Diary</strong> is at one of the two outer ends, and the <strong>Diadem</strong> is at the opposite outer end.<br>
+                • The <strong>Cup</strong> is adjacent to the <strong>Diary</strong>, and the <strong>Ring</strong> is at Position 3.<br><br>
+                Which artifact sits at <strong>Position 1</strong>?`,
+                options: ["Diary", "Diadem", "Cup", "Locket", "Ring"],
+                answer: "Diary"
+            },
+            {
+                id: 7,
+                location: "Checkpoint 07 • Blueberry Hill Crossroads",
+                villain: {
+                    name: "Swiper the Fox",
+                    title: "Master of Swiping",
+                    file: "swiper the fox.jpg",
+                    color: "#9a3412",
+                    icon: "🦊",
+                    dialogue: (name) => `"You're too late, ${name}! I rotated the compass signpost at Blueberry Hill—you'll never calculate your distance back to camp!"`
+                },
+                hero: {
+                    name: "Dora the Explorer",
+                    file: "dora.jpg",
+                    color: "#be185d",
+                    icon: "🎒",
+                    hint: (name) => `"¡Hola ${name}! 6 km North minus 12 km South leaves you **6 km South** of camp, and **8 km East**. By the Pythagorean theorem, √(6² + 8²) = √100 = **10 km**!"`
+                },
+                puzzleSubtitle: "Checkpoint 7 • Spatial Vector Puzzle",
+                puzzleTitle: "The Rotated Compass Trail",
+                prompt: `Swiper rotated the trail signpost at Blueberry Hill! You start at camp facing <strong>North</strong>:<br><br>
+                1. You walk <strong>6 km North</strong>.<br>
+                2. You turn <strong>90° clockwise</strong> and walk <strong>8 km</strong>.<br>
+                3. You turn <strong>90° clockwise</strong> again and walk <strong>12 km</strong>.<br><br>
+                What is your <strong>straight-line distance</strong> from the starting camp?`,
+                options: ["10 km", "14 km", "12 km", "8 km"],
+                answer: "10 km"
+            },
+            {
+                id: 8,
+                location: "Checkpoint 08 • Koopa Lava Keep",
+                villain: {
+                    name: "Bowser",
+                    title: "King of the Koopas",
+                    file: "bowser.jpg",
+                    color: "#7f1d1d",
+                    icon: "🐢",
+                    dialogue: (name) => `"GWAHAHA! Welcome to my Lava Keep, ${name}! Only one 3-digit combination lowers the drawbridge over the magma!"`
+                },
+                hero: {
+                    name: "Mario",
+                    file: "mario.jpg",
+                    color: "#dc2626",
+                    icon: "🍄",
+                    hint: (name) => `"It's-a me, Mario! Listen ${name}: 231, 462, and 693 all match the first three digit rules, but to be divisible by 6 the number must be EVEN! Choose **462**!"`
+                },
+                puzzleSubtitle: "Checkpoint 8 • Number Theory Cipher",
+                puzzleTitle: "Bowser's Dungeon Cipher",
+                prompt: `Bowser's drawbridge lock uses a 3-digit code where:<br><br>
+                • All three digits are <strong>distinct</strong> and non-zero.<br>
+                • The <strong>first digit</strong> is twice the <strong>third digit</strong>.<br>
+                • The <strong>second digit</strong> is the sum of the first and third digits.<br>
+                • The entire 3-digit number is divisible by <strong>6</strong>.<br><br>
+                Which 3-digit code lowers the drawbridge?`,
+                options: ["462", "693", "231", "894"],
+                answer: "462"
+            },
+            {
+                id: 9,
+                location: "Checkpoint 09 • The Kitchen Trap Grid",
+                villain: {
+                    name: "Tom the Cat",
+                    title: "Chief Mousetrap Architect",
+                    file: "tom.jpg",
+                    color: "#334155",
+                    icon: "🐱",
+                    dialogue: (name) => `"Meow-hehe! I wired the pantry scale to a spring-loaded cage, ${name}! Pick the wrong trio of weights and SNAP!"`
+                },
+                hero: {
+                    name: "Jerry the Mouse",
+                    file: "jerry.jpg",
+                    color: "#a16207",
+                    icon: "🧀",
+                    hint: (name) => `"Psst, ${name}! Check the sum of each 3-weight combination carefully: **2g + 7g + 14g = 23g**!"`
+                },
+                puzzleSubtitle: "Checkpoint 9 • Combinatorial Balance",
+                puzzleTitle: "The Counterweight Pantry Lock",
+                prompt: `To open the mousehole vault without springing Tom's cage, you must balance a scale at <strong>exactly 23 grams</strong> using <strong>exactly 3 weights</strong> chosen from this set (each weight can only be used once):<br><br>
+                <div class="font-mono-code text-base sm:text-lg bg-slate-900/90 p-3.5 rounded-xl border border-slate-700 text-center text-amber-300">
+                    2g &nbsp;,&nbsp; 4g &nbsp;,&nbsp; 5g &nbsp;,&nbsp; 7g &nbsp;,&nbsp; 9g &nbsp;,&nbsp; 11g &nbsp;,&nbsp; 14g
+                </div>
+                Which combination of 3 weights totals 23g?`,
+                options: [
+                    "2g + 7g + 14g",
+                    "4g + 7g + 11g",
+                    "2g + 9g + 11g",
+                    "5g + 7g + 9g"
+                ],
+                answer: "2g + 7g + 14g"
+            },
+            {
+                id: 10,
+                location: "Checkpoint 10 • The Cosmic Sanctuary Portal",
+                villain: {
+                    name: "Thanos",
+                    title: "The Mad Titan",
+                    file: "thanos.jpg",
+                    color: "#4c1d95",
+                    icon: "🧤",
+                    dialogue: (name) => `"I am... inevitable, ${name}. Six sockets on the Gauntlet, and only one cosmic calibration unlocks the portal home!"`
+                },
+                hero: {
+                    name: "Iron Man",
+                    file: "iron man.jpg",
+                    color: "#991b1b",
+                    icon: "🦾",
+                    hint: (name) => `"Hey ${name}, Tony Stark here. Add the first three equations: 2×(Power + Space + Time) = 50, so Power + Space + Time = 25. Since Space + Time = 19, **Power = 6**, **Space = 8**, and **Time = 11**. Then Mind = (6 × 11) − 8 = **58**!"`
+                },
+                puzzleSubtitle: "Final Checkpoint 10 • Simultaneous Equations",
+                puzzleTitle: "The Nano-Gauntlet Calibration",
+                prompt: `To override Thanos's Gauntlet and open the portal home, solve the linked cosmic calibration equations:<br><br>
+                <div class="font-mono-code text-sm sm:text-base bg-slate-900/90 p-4 rounded-xl border border-slate-700 space-y-1.5 text-purple-200">
+                    <div>• Power + Space = 14</div>
+                    <div>• Space + Time = 19</div>
+                    <div>• Power + Time = 17</div>
+                    <div>• Mind = (Power × Time) − Space</div>
+                </div>
+                What is the exact value of <strong>Mind</strong>?`,
+                options: ["58", "51", "54", "62"],
+                answer: "58"
+            }
+        ];
+
+        /* -----------------------------------------------------------
+           6. GLOBAL GAME STATE (3 Lifelines + 3 Vitals)
+           ----------------------------------------------------------- */
+        const gameState = {
+            playerName: "",
+            gender: "male",
+            currentCheckpoint: 0,
+            lifelinesRemaining: 3, // Reduced from 5 to 3
+            vitals: 3,             // 3 = Full Green (100%), 2 = Half Yellow (50%), 1 = Critical Red (5%), 0 = Dead
+            lifelineUsedOnCP: {},
+            solvedCP: {},
+            selectedOption: null,
+            timerInterval: null,
+            startTimeMs: null,
+            elapsedSeconds: 0,
+            isTimerRunning: false
+        };
+
+        // Render hardcoded male.png & female.png on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderPlayerAvatar('setup-male-avatar', 'male');
+            renderPlayerAvatar('setup-female-avatar', 'female');
+        });
+
+        function selectGender(gender) {
+            playSound('click');
+            gameState.gender = gender;
+            const maleBtn = document.getElementById('avatar-btn-male');
+            const femaleBtn = document.getElementById('avatar-btn-female');
+            const maleBadge = document.getElementById('badge-male');
+            const femaleBadge = document.getElementById('badge-female');
+
+            if (gender === 'male') {
+                maleBtn.className = "glass-card-active group rounded-2xl p-4 sm:p-5 flex flex-col items-center text-center transition-all duration-200 cursor-pointer";
+                femaleBtn.className = "glass-panel hover:border-indigo-400/60 group rounded-2xl p-4 sm:p-5 flex flex-col items-center text-center transition-all duration-200 cursor-pointer";
+                maleBadge.className = "mt-2.5 px-3 py-0.5 text-[11px] font-bold rounded-full bg-amber-400 text-slate-950";
+                maleBadge.textContent = "SELECTED";
+                femaleBadge.className = "mt-2.5 px-3 py-0.5 text-[11px] font-bold rounded-full bg-slate-800 text-slate-400";
+                femaleBadge.textContent = "CHOOSE";
+            } else {
+                femaleBtn.className = "glass-card-active group rounded-2xl p-4 sm:p-5 flex flex-col items-center text-center transition-all duration-200 cursor-pointer";
+                maleBtn.className = "glass-panel hover:border-indigo-400/60 group rounded-2xl p-4 sm:p-5 flex flex-col items-center text-center transition-all duration-200 cursor-pointer";
+                femaleBadge.className = "mt-2.5 px-3 py-0.5 text-[11px] font-bold rounded-full bg-amber-400 text-slate-950";
+                femaleBadge.textContent = "SELECTED";
+                maleBadge.className = "mt-2.5 px-3 py-0.5 text-[11px] font-bold rounded-full bg-slate-800 text-slate-400";
+                maleBadge.textContent = "CHOOSE";
+            }
+        }
+
+        function getPronouns() {
+            return gameState.gender === 'female'
+                ? { subj: 'she', obj: 'her', poss: 'her' }
+                : { subj: 'he', obj: 'him', poss: 'his' };
+        }
+
+        /* -----------------------------------------------------------
+           7. VITALS BATTERY UI & GAME OVER LOGIC
+           ----------------------------------------------------------- */
+        function updateVitalsUI() {
+            const pill = document.getElementById('hud-vitals-pill');
+            const shell = document.getElementById('vitals-battery-shell');
+            const fill = document.getElementById('vitals-battery-fill');
+            const cap = document.getElementById('vitals-battery-cap');
+
+            if (gameState.vitals === 3) {
+                // Full Green
+                pill.className = "flex items-center gap-2 bg-slate-950/90 border border-emerald-500/40 px-3 py-1.5 rounded-xl transition-all duration-300";
+                shell.className = "w-10 h-5 rounded-[5px] border-2 border-emerald-400 p-0.5 bg-slate-900 flex items-center overflow-hidden transition-colors duration-300";
+                cap.className = "w-1 h-2.5 bg-emerald-400 rounded-r-sm ml-[1px] transition-colors duration-300";
+                fill.className = "h-full rounded-[2px] bg-emerald-400 shadow-[0_0_8px_#34d399] transition-all duration-500";
+                fill.style.width = "100%";
+            } else if (gameState.vitals === 2) {
+                // 1st wrong answer: Half (50%) & Yellow
+                pill.className = "flex items-center gap-2 bg-slate-950/90 border border-amber-400/50 px-3 py-1.5 rounded-xl transition-all duration-300";
+                shell.className = "w-10 h-5 rounded-[5px] border-2 border-amber-400 p-0.5 bg-slate-900 flex items-center overflow-hidden transition-colors duration-300";
+                cap.className = "w-1 h-2.5 bg-amber-400 rounded-r-sm ml-[1px] transition-colors duration-300";
+                fill.className = "h-full rounded-[2px] bg-amber-400 shadow-[0_0_8px_#fbbf24] transition-all duration-500";
+                fill.style.width = "50%";
+            } else if (gameState.vitals === 1) {
+                // 2nd wrong answer: Tiny 5% sliver & Critical Red
+                pill.className = "flex items-center gap-2 bg-slate-950/90 border border-rose-500/70 px-3 py-1.5 rounded-xl transition-all duration-300 animate-pulse";
+                shell.className = "w-10 h-5 rounded-[5px] border-2 border-rose-500 p-0.5 bg-slate-900 flex items-center overflow-hidden transition-colors duration-300";
+                cap.className = "w-1 h-2.5 bg-rose-500 rounded-r-sm ml-[1px] transition-colors duration-300";
+                fill.className = "h-full rounded-[2px] bg-rose-500 shadow-[0_0_8px_#f43f5e] transition-all duration-500";
+                fill.style.width = "8%"; // Visually ~5% sliver inside the battery container
+            } else {
+                // 3rd wrong answer: 0% Dead
+                pill.className = "flex items-center gap-2 bg-slate-950/90 border border-rose-700/70 px-3 py-1.5 rounded-xl transition-all duration-300";
+                shell.className = "w-10 h-5 rounded-[5px] border-2 border-slate-600 p-0.5 bg-slate-900 flex items-center overflow-hidden transition-colors duration-300";
+                cap.className = "w-1 h-2.5 bg-slate-600 rounded-r-sm ml-[1px] transition-colors duration-300";
+                fill.style.width = "0%";
+            }
+        }
+
+        function triggerGameOver(cp) {
+            stopMysteryWorldStopwatch();
+            playSound('gameover');
+
+            document.getElementById('screen-checkpoint').classList.add('hidden');
+            document.getElementById('screen-gameover').classList.remove('hidden');
+
+            document.getElementById('hud-world-badge').textContent = "Game Over";
+            document.getElementById('hud-world-badge').className = "text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30 font-semibold";
+
+            document.getElementById('gameover-story-text').innerHTML = `
+                Oh no, <strong class="text-white">${gameState.playerName}</strong>! After three wrong attempts, your <strong>Vitals Battery</strong> drained completely at <strong>Checkpoint ${cp.id} (${cp.villain.name})</strong>. The Mystery World rift collapsed before you could escape—recharge your vitals and start a fresh run!
+            `;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* -----------------------------------------------------------
+           8. STORY FLOW: SETUP -> BACKYARD -> MYSTERY WORLD
+           ----------------------------------------------------------- */
+        function startStoryBackyard() {
+            const nameInput = document.getElementById('player-name-input');
+            const nameVal = nameInput.value.trim();
+            const errEl = document.getElementById('name-error-msg');
+
+            if (!nameVal) {
+                errEl.classList.remove('hidden');
+                nameInput.focus();
+                playSound('error');
+                return;
+            }
+            errEl.classList.add('hidden');
+            gameState.playerName = nameVal;
+            playSound('click');
+
+            // Populate HUD with selected avatar photo (male.png or female.png)
+            document.getElementById('game-hud').classList.remove('hidden');
+            renderPlayerAvatar('hud-avatar-box', gameState.gender);
+            document.getElementById('hud-player-name').textContent = gameState.playerName;
+            document.getElementById('hud-world-badge').textContent = "Real World";
+            document.getElementById('hud-checkpoint-text').textContent = "Act I: Backyard Discovery";
+
+            // Populate Backyard Scene with selected avatar photo
+            renderPlayerAvatar('backyard-avatar-box', gameState.gender);
+            document.getElementById('backyard-player-label').textContent = gameState.playerName;
+            const p = getPronouns();
+            document.getElementById('backyard-story-text').innerHTML = `
+                It was supposed to be a quiet evening at home for <strong class="text-amber-300">${gameState.playerName}</strong>. 
+                While walking across ${p.poss} backyard near the old oak tree, ${gameState.playerName} notices a strange violet light pulsing beneath the grass. 
+                Half-buried in the soil lies a mysterious geometric artifact—<strong>The Astral Prism</strong>—humming with dimensional energy.
+            `;
+
+            document.getElementById('screen-setup').classList.add('hidden');
+            document.getElementById('screen-backyard').classList.remove('hidden');
+        }
+
+        function touchMysteriousObject() {
+            playSound('rift');
+            const card = document.getElementById('backyard-card');
+            card.classList.add('rift-vortex');
+
+            setTimeout(() => {
+                card.classList.remove('rift-vortex');
+                document.getElementById('screen-backyard').classList.add('hidden');
+                document.getElementById('screen-awakening').classList.remove('hidden');
+
+                // Start Mystery World Stopwatch!
+                startMysteryWorldStopwatch();
+
+                document.getElementById('hud-world-badge').textContent = "Mystery World";
+                document.getElementById('hud-world-badge').className = "text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-400/30 font-semibold";
+                document.getElementById('hud-checkpoint-text').textContent = "Act II: The Nexus Awakening";
+                document.getElementById('hud-lifeline-pill').classList.remove('hidden');
+                document.getElementById('hud-vitals-pill').classList.remove('hidden');
+                document.getElementById('hud-vitals-pill').classList.add('flex');
+                document.getElementById('hud-map-btn').classList.remove('hidden');
+                updateVitalsUI();
+
+                const p = getPronouns();
+                document.getElementById('awakening-name').textContent = gameState.playerName;
+                document.getElementById('awakening-story-text').innerHTML = `
+                    A blinding vortex of light pulls <strong>${gameState.playerName}</strong> out of ${p.poss} backyard and drops ${p.obj} into the <strong>Mystery World</strong>! 
+                    The timer has started. To get back home to the Real World, ${gameState.playerName} picks up two ancient tools lying beside the rift portal:
+                `;
+            }, 900);
+        }
+
+        /* -----------------------------------------------------------
+           9. STOPWATCH TIMER FUNCTIONS
+           ----------------------------------------------------------- */
+        function startMysteryWorldStopwatch() {
+            if (gameState.isTimerRunning) return;
+            gameState.isTimerRunning = true;
+            gameState.startTimeMs = Date.now() - (gameState.elapsedSeconds * 1000);
+
+            const dot = document.getElementById('timer-status-dot');
+            dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping";
+
+            gameState.timerInterval = setInterval(() => {
+                gameState.elapsedSeconds = Math.floor((Date.now() - gameState.startTimeMs) / 1000);
+                updateTimerHUD();
+            }, 250);
+        }
+
+        function stopMysteryWorldStopwatch() {
+            gameState.isTimerRunning = false;
+            if (gameState.timerInterval) {
+                clearInterval(gameState.timerInterval);
+                gameState.timerInterval = null;
+            }
+            const dot = document.getElementById('timer-status-dot');
+            dot.className = "w-2.5 h-2.5 rounded-full bg-amber-400";
+        }
+
+        function formatMMSS(totalSeconds) {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function updateTimerHUD() {
+            document.getElementById('hud-timer-display').textContent = formatMMSS(gameState.elapsedSeconds);
+        }
+
+        /* -----------------------------------------------------------
+           10. CHECKPOINT ARENA, DYNAMIC PORTRAITS & SHUFFLED OPTIONS
+           ----------------------------------------------------------- */
+        function enterCheckpoint(index) {
+            playSound('click');
+            gameState.currentCheckpoint = index;
+            gameState.selectedOption = null;
+
+            document.getElementById('screen-awakening').classList.add('hidden');
+            document.getElementById('screen-checkpoint').classList.remove('hidden');
+
+            loadCheckpointUI(index);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function loadCheckpointUI(index) {
+            const cp = CHECKPOINTS[index];
+
+            document.getElementById('hud-checkpoint-text').textContent = `Checkpoint ${cp.id} of 10 • ${cp.villain.name}`;
+            document.getElementById('cp-progress-label').textContent = `Checkpoint ${cp.id} of 10`;
+            renderTopStepper();
+            updateLifelineUI();
+
+            // Villain Card & Hardcoded Image
+            document.getElementById('cp-location-badge').textContent = cp.location;
+            document.getElementById('villain-name').textContent = cp.villain.name;
+            document.getElementById('villain-title').textContent = cp.villain.title;
+            document.getElementById('villain-speaker-label').textContent = `${cp.villain.name} confronts ${gameState.playerName}:`;
+            document.getElementById('villain-dialogue-text').textContent = cp.villain.dialogue(gameState.playerName);
+
+            loadHardcodedCharacterImage(
+                document.getElementById('villain-img-el'),
+                cp.villain.file,
+                cp.villain.name,
+                "Gate Guardian",
+                cp.villain.color
+            );
+
+            // Hero Lifeline Box
+            loadHardcodedCharacterImage(
+                document.getElementById('hero-img-el'),
+                cp.hero.file,
+                cp.hero.name,
+                "Lifeline Protagonist",
+                cp.hero.color
+            );
+
+            const heroCard = document.getElementById('hero-hint-card');
+            if (gameState.lifelineUsedOnCP[cp.id]) {
+                showHeroLifelineBox(cp);
+            } else {
+                heroCard.classList.add('hidden');
+            }
+
+            // Puzzle Prompt & Shuffled Options
+            document.getElementById('puzzle-subtitle').textContent = cp.puzzleSubtitle;
+            document.getElementById('puzzle-title').textContent = cp.puzzleTitle;
+            document.getElementById('puzzle-instructions').innerHTML = cp.prompt;
+            document.getElementById('puzzle-feedback-box').classList.add('hidden');
+            document.getElementById('cp-solved-badge').classList.toggle('hidden', !gameState.solvedCP[cp.id]);
+
+            renderShuffledOptions(cp);
+        }
+
+        function renderShuffledOptions(cp) {
+            const workspace = document.getElementById('puzzle-workspace');
+            workspace.innerHTML = '';
+            gameState.selectedOption = null;
+
+            const shuffled = shuffleArray(cp.options);
+            const letters = ['A', 'B', 'C', 'D', 'E'];
+
+            shuffled.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'option-btn w-full text-left p-4 rounded-xl bg-slate-900/90 border border-slate-700 flex items-center gap-3.5 text-sm sm:text-base text-slate-100';
+                btn.innerHTML = `
+                    <span class="w-8 h-8 rounded-lg bg-slate-800 border border-slate-600 flex items-center justify-center font-mono-code font-bold text-amber-300 shrink-0">${letters[idx]}</span>
+                    <span class="font-semibold">${optText}</span>
+                `;
+                btn.onclick = () => {
+                    playSound('click');
+                    gameState.selectedOption = optText;
+                    Array.from(workspace.children).forEach(child => child.classList.remove('selected'));
+                    btn.classList.add('selected');
+                };
+                workspace.appendChild(btn);
+            });
+        }
+
+        function resetAndReshufflePuzzle() {
+            playSound('click');
+            const cp = CHECKPOINTS[gameState.currentCheckpoint];
+            document.getElementById('puzzle-feedback-box').classList.add('hidden');
+            renderShuffledOptions(cp);
+        }
+
+        function submitSelectedAnswer() {
+            const cp = CHECKPOINTS[gameState.currentCheckpoint];
+            if (!gameState.selectedOption) {
+                showPuzzleFeedback(false, `Please select one of the options before unlocking the checkpoint!`);
+                return;
+            }
+
+            if (gameState.selectedOption === cp.answer) {
+                gameState.solvedCP[cp.id] = true;
+                document.getElementById('cp-solved-badge').classList.remove('hidden');
+                renderTopStepper();
+                showPuzzleFeedback(true, `Correct! ${cp.villain.name}'s lock shatters! Advancing...`);
+
+                setTimeout(() => {
+                    if (gameState.currentCheckpoint + 1 < CHECKPOINTS.length) {
+                        enterCheckpoint(gameState.currentCheckpoint + 1);
+                    } else {
+                        completeGameAndReturnHome();
+                    }
+                }, 950);
+            } else {
+                // Wrong answer: Reduce Vitals battery
+                gameState.vitals = Math.max(0, gameState.vitals - 1);
+                updateVitalsUI();
+
+                if (gameState.vitals <= 0) {
+                    triggerGameOver(cp);
+                    return;
+                }
+
+                const vitalWarning = gameState.vitals === 2
+                    ? "Your Vitals Battery dropped to HALF!"
+                    : "CRITICAL WARNING: Your Vitals Battery is nearly empty—one more wrong answer and you die!";
+
+                showPuzzleFeedback(false, `Incorrect! ${vitalWarning} ${cp.villain.name} reshuffled the lock options.`);
+                renderShuffledOptions(cp);
+            }
+        }
+
+        function renderTopStepper() {
+            const container = document.getElementById('cp-stepper-dots');
+            container.innerHTML = CHECKPOINTS.map((cp, idx) => {
+                const isSolved = !!gameState.solvedCP[cp.id];
+                const isCurrent = idx === gameState.currentCheckpoint;
+                let cls = "bg-slate-800/80 text-slate-500 border-slate-700";
+                if (isSolved) cls = "bg-emerald-500/30 text-emerald-300 border-emerald-400 font-bold";
+                if (isCurrent) cls = "bg-amber-500 text-slate-950 border-amber-300 font-extrabold ring-2 ring-amber-400/50";
+                return `
+                    <div class="h-8 rounded-lg border ${cls} flex items-center justify-center text-xs transition-all">
+                        ${isSolved ? '✓' : cp.id}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateLifelineUI() {
+            const cp = CHECKPOINTS[gameState.currentCheckpoint];
+            const alreadyUsedHere = !!gameState.lifelineUsedOnCP[cp.id];
+
+            document.getElementById('hud-lifeline-count').textContent = `${gameState.lifelinesRemaining}/3`;
+
+            const barsEl = document.getElementById('lifeline-battery-bars');
+            let barsHtml = '';
+            for (let i = 0; i < 3; i++) {
+                const active = i < gameState.lifelinesRemaining;
+                barsHtml += `<span class="w-3.5 h-5 rounded-sm ${active ? 'bg-cyan-400 shadow-[0_0_8px_#22d3ee]' : 'bg-slate-800 border border-slate-700'}"></span>`;
+            }
+            barsEl.innerHTML = barsHtml;
+
+            const btn = document.getElementById('call-lifeline-btn');
+            const btnText = document.getElementById('call-lifeline-btn-text');
+
+            if (alreadyUsedHere) {
+                btn.disabled = true;
+                btn.className = "w-full py-3 px-4 rounded-xl bg-slate-800 border border-cyan-500/30 text-cyan-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 opacity-80 cursor-default";
+                btnText.textContent = `✓ ${cp.hero.name} is on the line!`;
+            } else if (gameState.lifelinesRemaining <= 0) {
+                btn.disabled = true;
+                btn.className = "w-full py-3 px-4 rounded-xl bg-slate-900 border border-slate-700 text-slate-500 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-not-allowed";
+                btnText.textContent = `No Lifeline Charges Remaining (0/3)`;
+            } else {
+                btn.disabled = false;
+                btn.className = "w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 transition cursor-pointer";
+                btnText.textContent = `Summon ${cp.hero.name} for Hint (${gameState.lifelinesRemaining} Left)`;
+            }
+        }
+
+        function useHeroLifeline() {
+            const cp = CHECKPOINTS[gameState.currentCheckpoint];
+            if (gameState.lifelineUsedOnCP[cp.id] || gameState.lifelinesRemaining <= 0) return;
+
+            playSound('lifeline');
+            gameState.lifelinesRemaining--;
+            gameState.lifelineUsedOnCP[cp.id] = true;
+
+            updateLifelineUI();
+            showHeroLifelineBox(cp);
+        }
+
+        function showHeroLifelineBox(cp) {
+            const heroCard = document.getElementById('hero-hint-card');
+            heroCard.classList.remove('hidden');
+            document.getElementById('hero-name').textContent = cp.hero.name;
+            document.getElementById('hero-hint-text').innerHTML = cp.hero.hint(gameState.playerName).replace(/\*\*(.*?)\*\*/g, '<strong class="text-amber-300 underline">$1</strong>');
+        }
+
+        function showPuzzleFeedback(isSuccess, message) {
+            const box = document.getElementById('puzzle-feedback-box');
+            const txt = document.getElementById('puzzle-feedback-text');
+            box.classList.remove('hidden');
+
+            if (isSuccess) {
+                playSound('success');
+                box.className = "my-4 p-4 rounded-2xl text-sm font-semibold bg-emerald-950/80 border-2 border-emerald-400 text-emerald-200 flex items-center justify-between gap-3";
+                txt.innerHTML = `✅ ${message}`;
+            } else {
+                playSound('error');
+                box.className = "my-4 p-4 rounded-2xl text-sm font-semibold bg-rose-950/80 border-2 border-rose-500 text-rose-200 flex items-center justify-between gap-3";
+                txt.innerHTML = `❌ ${message}`;
+            }
+        }
+
+        /* -----------------------------------------------------------
+           11. RECORDING COMPLETION DATA TO GOOGLE SHEETS + LOCAL STORAGE
+           ----------------------------------------------------------- */
+        async function recordCompletionData(playerName, completedAtTimestamp, timeTakenFormatted, timeMMSS) {
+            const statusEl = document.getElementById('sheet-sync-status');
+            const payload = {
+                playerName: playerName,
+                completedAt: completedAtTimestamp,
+                timeTaken: timeTakenFormatted,
+                timeMMSS: timeMMSS,
+                lifelinesRemaining: `${gameState.lifelinesRemaining}/3`,
+                vitalsRemaining: `${gameState.vitals}/3`
+            };
+
+            // 1. Always save a backup log in browser localStorage
+            try {
+                const logs = JSON.parse(localStorage.getItem('rift_walker_completions') || '[]');
+                logs.push(payload);
+                localStorage.setItem('rift_walker_completions', JSON.stringify(logs));
+            } catch (e) {}
+
+            // 2. Send to Google Sheets Webhook if configured
+            if (!GOOGLE_SHEETS_WEBHOOK_URL || GOOGLE_SHEETS_WEBHOOK_URL === "PASTE_YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") {
+                if (statusEl) statusEl.textContent = "✓ Result saved locally (Add your Google Sheets URL in code to sync online)";
+                return;
+            }
+
+            try {
+                if (statusEl) statusEl.textContent = "⏳ Recording completion time to Leaderboard Sheet...";
+                await fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                if (statusEl) statusEl.textContent = "✓ Completion time officially recorded to the Host Sheet!";
+            } catch (err) {
+                if (statusEl) statusEl.textContent = "⚠️ Saved locally (Network error reaching Sheet)";
+            }
+        }
+
+        /* -----------------------------------------------------------
+           12. VICTORY SCREEN & STOPWATCH COMPLETION
+           ----------------------------------------------------------- */
+        function completeGameAndReturnHome() {
+            stopMysteryWorldStopwatch();
+            playSound('victory');
+
+            document.getElementById('screen-checkpoint').classList.add('hidden');
+            document.getElementById('screen-victory').classList.remove('hidden');
+
+            document.getElementById('hud-world-badge').textContent = "Back Home!";
+            document.getElementById('hud-world-badge').className = "text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-semibold";
+            document.getElementById('hud-checkpoint-text').textContent = "Journey Complete • Real World";
+
+            const totalSecs = gameState.elapsedSeconds;
+            const mins = Math.floor(totalSecs / 60);
+            const secs = totalSecs % 60;
+            const timeTakenText = `${mins} ${mins === 1 ? 'min' : 'mins'} ${secs} ${secs === 1 ? 'sec' : 'secs'}`;
+            const completedAtTime = new Date().toLocaleString();
+
+            renderPlayerAvatar('victory-avatar-box', gameState.gender);
+            document.getElementById('victory-player-name').textContent = gameState.playerName.toUpperCase();
+            document.getElementById('victory-story-summary').textContent = `
+                Stepping through the 10th Rift Gate, ${gameState.playerName} lands safely back in the backyard grass! The Astral Prism powers down, and the Mystery World stopwatch locks in your official completion time:
+            `;
+
+            document.getElementById('victory-time-sentence').textContent =
+                `You have completed the game in ${mins} ${mins === 1 ? 'min' : 'mins'} and ${secs} ${secs === 1 ? 'second' : 'seconds'}!`;
+            document.getElementById('victory-digital-clock').textContent = formatMMSS(totalSecs);
+            document.getElementById('victory-lifelines-left').textContent = `${gameState.lifelinesRemaining} / 3`;
+
+            let rank = "Rift Legend";
+            if (gameState.lifelinesRemaining === 3 && gameState.vitals === 3) rank = "Supreme Genius";
+            else if (gameState.lifelinesRemaining >= 2) rank = "Master Tactician";
+            document.getElementById('victory-rank-badge').textContent = rank;
+
+            // Record Player Name, Completed Timestamp, and Time Taken to Sheet
+            recordCompletionData(gameState.playerName, completedAtTime, timeTakenText, formatMMSS(totalSecs));
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function copyScorecard() {
+            const mins = Math.floor(gameState.elapsedSeconds / 60);
+            const secs = gameState.elapsedSeconds % 60;
+            const text = `🏆 THE RIFT WALKER'S ODYSSEY — VICTORY CERTIFICATE 🏆\nExplorer: ${gameState.playerName}\nCheckpoints Cleared: 10 / 10\nOfficial Mystery World Time: You have completed the game in ${mins} mins and ${secs} seconds! (${formatMMSS(gameState.elapsedSeconds)})\nLifelines Remaining: ${gameState.lifelinesRemaining} / 3`;
+
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+
+            const btnTxt = document.getElementById('copy-score-btn-text');
+            btnTxt.textContent = "✓ Copied to Clipboard!";
+            setTimeout(() => { btnTxt.textContent = "Copy Completion Certificate"; }, 2500);
+        }
+
+        function resetGame() {
+            stopMysteryWorldStopwatch();
+            gameState.currentCheckpoint = 0;
+            gameState.lifelinesRemaining = 3;
+            gameState.vitals = 3;
+            gameState.lifelineUsedOnCP = {};
+            gameState.solvedCP = {};
+            gameState.elapsedSeconds = 0;
+            updateTimerHUD();
+            updateVitalsUI();
+
+            document.getElementById('game-hud').classList.add('hidden');
+            document.getElementById('screen-victory').classList.add('hidden');
+            document.getElementById('screen-gameover').classList.add('hidden');
+            document.getElementById('screen-checkpoint').classList.add('hidden');
+            document.getElementById('screen-setup').classList.remove('hidden');
+        }
+
+        /* -----------------------------------------------------------
+           13. MODALS: 10-CHECKPOINT MAP & FULL IMAGE VIEW
+           ----------------------------------------------------------- */
+        function toggleMapModal() {
+            playSound('click');
+            const modal = document.getElementById('map-modal');
+            const isHidden = modal.classList.contains('hidden');
+            if (isHidden) {
+                const grid = document.getElementById('map-modal-grid');
+                grid.innerHTML = CHECKPOINTS.map((cp, idx) => {
+                    const solved = !!gameState.solvedCP[cp.id];
+                    const current = idx === gameState.currentCheckpoint;
+                    return `
+                        <div class="p-3.5 rounded-2xl border ${
+                            solved ? 'bg-emerald-950/40 border-emerald-500/50' :
+                            current ? 'bg-amber-500/15 border-amber-400' : 'bg-slate-900/80 border-slate-800'
+                        } flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">${cp.villain.icon}</span>
+                                <div>
+                                    <div class="text-[11px] font-bold uppercase tracking-wider text-indigo-300">Checkpoint ${String(cp.id).padStart(2, '0')}</div>
+                                    <div class="font-bold text-sm text-white">${cp.villain.name}</div>
+                                    <div class="text-[11px] text-cyan-300">Hero Lifeline: ${cp.hero.name}</div>
+                                </div>
+                            </div>
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-full ${
+                                solved ? 'bg-emerald-500/20 text-emerald-300' :
+                                current ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-500'
+                            }">
+                                ${solved ? '✓ Cleared' : current ? 'Current' : 'Locked'}
+                            </span>
+                        </div>
+                    `;
+                }).join('');
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function openFullImageModal(type) {
+            const cp = CHECKPOINTS[gameState.currentCheckpoint];
+            const imgEl = document.getElementById('full-modal-img');
+            const capEl = document.getElementById('full-modal-caption');
+            if (type === 'villain') {
+                imgEl.src = document.getElementById('villain-img-el').src;
+                capEl.textContent = `${cp.villain.name} — ${cp.villain.title}`;
+            } else {
+                imgEl.src = document.getElementById('hero-img-el').src;
+                capEl.textContent = `${cp.hero.name} — Lifeline Protagonist`;
+            }
+            document.getElementById('full-image-modal').classList.remove('hidden');
+        }
+
+        function closeFullImageModal() {
+            document.getElementById('full-image-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
