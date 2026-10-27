@@ -668,7 +668,15 @@
            Paste your Google Apps Script Web App URL inside the quotes below!
            ----------------------------------------------------------- */
         const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwvyclG30s8l80Q9nyPfH1oeXH4Li2SNaLsHzuzKxVz_X-JuwV1d2L3f4mN7GtxUq7o/exec";
+        /* -----------------------------------------------------------
+           0. GOOGLE FORMS CONFIGURATION (PRE-CONFIGURED WITH YOUR IDs)
+           ----------------------------------------------------------- */
+        const GOOGLE_FORM_ACTION_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfBcD1y1AsIkTZ46zPh-ShXJ_A2kk2_xFanMgReKiKKKR9nBg/formResponse";
 
+        const ENTRY_PLAYER_NAME  = "entry.518908763";  // 1. Player Name
+        const ENTRY_COMPLETED_AT = "entry.458406996";  // 2. Completed At
+        const ENTRY_TIME_TAKEN   = "entry.232093475";  // 3. Time Taken
+        const ENTRY_GAME_STATUS  = "entry.1689940920"; // 4. Status (SUCCESS / FAILED)
         /* -----------------------------------------------------------
            1. FISHER-YATES SHUFFLE FOR RANDOMIZED OPTIONS
            ----------------------------------------------------------- */
@@ -1227,6 +1235,21 @@
             document.getElementById('gameover-story-text').innerHTML = `
                 Oh no, <strong class="text-white">${gameState.playerName}</strong>! After three wrong attempts, your <strong>Vitals Battery</strong> drained completely at <strong>Checkpoint ${cp.id} (${cp.villain.name})</strong>. The Mystery World rift collapsed before you could escape—recharge your vitals and start a fresh run!
             `;
+
+            // Calculate time survived before failing & record as FAILED in Google Form
+            const totalSecs = gameState.elapsedSeconds;
+            const mins = Math.floor(totalSecs / 60);
+            const secs = totalSecs % 60;
+            const timeTakenText = `${mins} ${mins === 1 ? 'min' : 'mins'} ${secs} ${secs === 1 ? 'sec' : 'secs'} (${formatMMSS(totalSecs)})`;
+            const completedAtTime = new Date().toLocaleString();
+
+            recordCompletionData(
+                gameState.playerName,
+                completedAtTime,
+                timeTakenText,
+                `FAILED (Died at CP ${cp.id}: ${cp.villain.name})`
+            );
+
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -1559,39 +1582,45 @@
         /* -----------------------------------------------------------
            11. RECORDING COMPLETION DATA TO GOOGLE SHEETS + LOCAL STORAGE
            ----------------------------------------------------------- */
-        async function recordCompletionData(playerName, completedAtTimestamp, timeTakenFormatted, timeMMSS) {
+        /* -----------------------------------------------------------
+           11. RECORDING 4 ATTRIBUTES TO GOOGLE FORMS -> GOOGLE SHEETS
+           ----------------------------------------------------------- */
+        async function recordCompletionData(playerName, completedAtTimestamp, timeTakenFormatted, gameStatus) {
             const statusEl = document.getElementById('sheet-sync-status');
             const payload = {
                 playerName: playerName,
                 completedAt: completedAtTimestamp,
                 timeTaken: timeTakenFormatted,
-                timeMMSS: timeMMSS,
-                lifelinesRemaining: `${gameState.lifelinesRemaining}/3`,
-                vitalsRemaining: `${gameState.vitals}/3`
+                status: gameStatus
             };
 
-            // 1. Always save a backup log in browser localStorage
+            // 1. Save backup log in localStorage
             try {
                 const logs = JSON.parse(localStorage.getItem('rift_walker_completions') || '[]');
                 logs.push(payload);
                 localStorage.setItem('rift_walker_completions', JSON.stringify(logs));
             } catch (e) {}
 
-            // 2. Send to Google Sheets Webhook if configured
-            if (!GOOGLE_SHEETS_WEBHOOK_URL || GOOGLE_SHEETS_WEBHOOK_URL === "PASTE_YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") {
-                if (statusEl) statusEl.textContent = "✓ Result saved locally (Add your Google Sheets URL in code to sync online)";
-                return;
-            }
-
+            // 2. Submit silently to your Google Form
             try {
-                if (statusEl) statusEl.textContent = "⏳ Recording completion time to Leaderboard Sheet...";
-                await fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
+                if (statusEl) statusEl.textContent = "⏳ Recording result to Leaderboard Sheet...";
+
+                const formData = new URLSearchParams();
+                formData.append(ENTRY_PLAYER_NAME, playerName);
+                formData.append(ENTRY_COMPLETED_AT, completedAtTimestamp);
+                formData.append(ENTRY_TIME_TAKEN, timeTakenFormatted);
+                formData.append(ENTRY_GAME_STATUS, gameStatus);
+
+                await fetch(GOOGLE_FORM_ACTION_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: formData.toString()
                 });
-                if (statusEl) statusEl.textContent = "✓ Completion time officially recorded to the Host Sheet!";
+
+                if (statusEl) statusEl.textContent = "✓ Official result recorded to the Host Leaderboard Sheet!";
             } catch (err) {
                 if (statusEl) statusEl.textContent = "⚠️ Saved locally (Network error reaching Sheet)";
             }
@@ -1614,7 +1643,7 @@
             const totalSecs = gameState.elapsedSeconds;
             const mins = Math.floor(totalSecs / 60);
             const secs = totalSecs % 60;
-            const timeTakenText = `${mins} ${mins === 1 ? 'min' : 'mins'} ${secs} ${secs === 1 ? 'sec' : 'secs'}`;
+            const timeTakenText = `${mins} ${mins === 1 ? 'min' : 'mins'} ${secs} ${secs === 1 ? 'sec' : 'secs'} (${formatMMSS(totalSecs)})`;
             const completedAtTime = new Date().toLocaleString();
 
             renderPlayerAvatar('victory-avatar-box', gameState.gender);
@@ -1633,8 +1662,13 @@
             else if (gameState.lifelinesRemaining >= 2) rank = "Master Tactician";
             document.getElementById('victory-rank-badge').textContent = rank;
 
-            // Record Player Name, Completed Timestamp, and Time Taken to Sheet
-            recordCompletionData(gameState.playerName, completedAtTime, timeTakenText, formatMMSS(totalSecs));
+            // Record all 4 attributes to Google Form -> Google Sheet
+            recordCompletionData(
+                gameState.playerName,
+                completedAtTime,
+                timeTakenText,
+                `SUCCESS (Cleared 10/10 | Lifelines: ${gameState.lifelinesRemaining}/3 | Vitals: ${gameState.vitals}/3)`
+            );
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
